@@ -1,8 +1,35 @@
+import android.os.Build.VERSION.SDK_INT
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.DefaultAlpha
+import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import coil.ImageLoader
+import coil.compose.AsyncImagePainter
+import coil.compose.SubcomposeAsyncImage
+import coil.compose.SubcomposeAsyncImageScope
+import coil.decode.GifDecoder
+import coil.decode.ImageDecoderDecoder
+import coil.decode.SvgDecoder
+import coil.imageLoader
+import coil.request.ImageRequest
+import coil.transform.Transformation
+
 @Composable
 fun Picture(
     modifier: Modifier = Modifier,
     model: Any?,
+    transformations: List<Transformation> = emptyList(),
     manualImageRequest: ImageRequest? = null,
+    manualImageLoader: ImageLoader? = null,
     contentDescription: String? = null,
     shape: Shape = CircleShape,
     contentScale: ContentScale = ContentScale.Crop,
@@ -18,25 +45,29 @@ fun Picture(
     colorFilter: ColorFilter? = null,
     filterQuality: FilterQuality = DrawScope.DefaultFilterQuality,
     zoomParams: ZoomParams = ZoomParams(),
-    shimmerEnabled: Boolean = true
+    shimmerEnabled: Boolean = true,
+    crossfadeEnabled: Boolean = true,
+    allowHardware: Boolean = true,
 ) {
-    val activity = LocalContext.current as Activity
+    val activity = LocalContext.current.findActivity()
+    val context = LocalContext.current
 
     var errorOccurred by rememberSaveable { mutableStateOf(false) }
 
     var shimmerVisible by rememberSaveable { mutableStateOf(true) }
 
-    val imageLoader = ImageLoader.Builder(
-        LocalContext.current
-    ).components {
-        if (SDK_INT >= 28) add(ImageDecoderDecoder.Factory())
-        else add(GifDecoder.Factory())
-        add(SvgDecoder.Factory())
-    }.build()
+    val imageLoader =
+        manualImageLoader ?: context.imageLoader.newBuilder().components {
+            if (SDK_INT >= 28) add(ImageDecoderDecoder.Factory())
+            else add(GifDecoder.Factory())
+            add(SvgDecoder.Factory())
+        }.build()
 
-    val request = manualImageRequest ?: ImageRequest.Builder(LocalContext.current)
+    val request = manualImageRequest ?: ImageRequest.Builder(context)
         .data(model)
-        .crossfade(true)
+        .crossfade(crossfadeEnabled)
+        .allowHardware(allowHardware)
+        .transformations(transformations)
         .build()
 
     val image: @Composable () -> Unit = {
@@ -48,7 +79,10 @@ fun Picture(
                 .clip(shape)
                 .then(if (shimmerEnabled) Modifier.shimmer(shimmerVisible) else Modifier),
             contentScale = contentScale,
-            loading = loading,
+            loading = {
+                if (loading != null) loading(it)
+                shimmerVisible = true
+            },
             success = success,
             error = error,
             onSuccess = {
@@ -81,14 +115,14 @@ fun Picture(
             ),
             onTap = {
                 if (zoomParams.hideBarsOnTap) {
-                    activity.apply { if (isSystemBarsHidden) showSystemBars() else hideSystemBars() }
+                    activity?.apply { if (isSystemBarsHidden) showSystemBars() else hideSystemBars() }
                     zoomParams.onTap(it)
                 }
             },
             content = { image() }
         )
     } else image()
-
+    
     //Needed for triggering recomposition
     LaunchedEffect(errorOccurred) {
         if (errorOccurred && error == null) {
