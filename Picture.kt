@@ -495,3 +495,16 @@ fun Context.findActivity(): Activity? = when (this) {
         is ContextWrapper -> baseContext.findActivity()
         else -> null
     }
+
+@Composable
+fun Modifier.shimmer(
+    visible: Boolean,
+    color: Color = MaterialTheme.colorScheme.surfaceVariant
+) = then(
+    Modifier.placeholder(
+        visible = visible,
+        color = color,
+        highlight = PlaceholderHighlight.shimmer()
+    )
+)
+
