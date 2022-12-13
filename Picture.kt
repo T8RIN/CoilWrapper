@@ -489,3 +489,9 @@ class ZoomableState(
 private fun Dp.toPx(density: Density): Float {
     return with(density) { toPx() }
 }
+
+fun Context.findActivity(): Activity? = when (this) {
+        is Activity -> this
+        is ContextWrapper -> baseContext.findActivity()
+        else -> null
+    }
