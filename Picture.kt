@@ -116,8 +116,8 @@ fun Picture(
             onTap = {
                 if (zoomParams.hideBarsOnTap) {
                     activity?.apply { if (isSystemBarsHidden) showSystemBars() else hideSystemBars() }
-                    zoomParams.onTap(it)
                 }
+                zoomParams.onTap(it)
             },
             content = { image() }
         )
