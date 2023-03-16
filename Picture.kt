@@ -54,9 +54,7 @@ import com.google.accompanist.placeholder.material.shimmer
 import com.google.accompanist.placeholder.placeholder
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import ru.tech.imageresizershrinker.widget.StatusBarUtils.hideSystemBars
-import ru.tech.imageresizershrinker.widget.StatusBarUtils.isSystemBarsHidden
-import ru.tech.imageresizershrinker.widget.StatusBarUtils.showSystemBars
+
 
 @Composable
 fun Picture(
